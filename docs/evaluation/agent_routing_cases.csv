@@ -1,0 +1,8 @@
+role,question,expected,actual,correct,latency_ms
+student,What is my attendance?,student_success,student_success,True,0.01920000067912042
+student,How am I performing?,student_success,student_success,True,0.008299997716676444
+student,What subjects are in Semester VII?,academic,academic,True,0.0104000027931761
+student,What is the mentor-mentee policy?,university,university,True,0.008200000593205914
+faculty,Which students have low attendance?,faculty_intelligence,faculty_intelligence,True,0.0032999996619764715
+faculty,Explain the college anti-ragging policy,university,university,True,0.008600000001024455
+faculty,What subjects are in Semester VII?,academic,academic,True,0.008999999408842996

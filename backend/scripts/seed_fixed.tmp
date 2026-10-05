@@ -1,0 +1,960 @@
+﻿import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from pathlib import Path
+import random
+import hashlib
+
+from sqlalchemy.orm import Session
+
+from app.db.database import SessionLocal
+from app.models.entities import (
+    User,
+    Department,
+    Student,
+    Faculty,
+    Subject,
+    Enrollment,
+    AttendanceSession,
+    AttendanceRecord,
+    Assessment,
+    Mark,
+    SemesterResult,
+    Resource,
+    Achievement,
+    Event,
+    Notification,
+    AuditLog,
+)
+
+
+# ============================================================
+# CONFIGURATION
+# ============================================================
+
+SEED = 42
+random.seed(SEED)
+
+DB = SessionLocal()
+
+DEPARTMENT_CODE = "CSBS"
+DEPARTMENT_NAME = "Computer Science and Business Systems"
+
+BATCH = "2023-2027"
+
+SECTION_A_START = 2116231401103
+SECTION_A_END = 2116231401164
+
+SECTION_B_START = 2116231401165
+SECTION_B_END = 2116231401225
+
+
+# ============================================================
+# SYNTHETIC DATA
+# ============================================================
+
+FIRST_NAMES = [
+    "Aarav", "Aadhya", "Aditya", "Akash", "Ananya",
+    "Anirudh", "Arjun", "Ashwin", "Bhavya", "Charan",
+    "Dhanush", "Diya", "Harish", "Ishita", "Jeevan",
+    "Karthik", "Keerthana", "Krishna", "Lakshmi", "Madhav",
+    "Manoj", "Meera", "Nandhini", "Naveen", "Neha",
+    "Nikhil", "Pavithra", "Pranav", "Priya", "Rahul",
+    "Rakesh", "Riya", "Rohit", "Sanjay", "Sanjana",
+    "Saranya", "Shivani", "Shravan", "Siddharth", "Sneha",
+    "Sowmya", "Surya", "Swetha", "Tanisha", "Tejas",
+    "Varun", "Vignesh", "Vishal", "Yash", "Zoya",
+]
+
+LAST_NAMES = [
+    "Iyer", "Rajan", "Kumar", "Sharma", "Reddy",
+    "Nair", "Krishnan", "Menon", "Balan", "Pillai",
+    "Subramanian", "Narayanan", "Prasad", "Mohan",
+    "Shankar", "Rao", "Patel", "Das", "Joshi", "Mehta",
+]
+
+
+FACULTY_NAMES = [
+    ("Dr. Anitha Krishnan", "FAC001", "Professor"),
+    ("Dr. Karthikeyan Raman", "FAC002", "Associate Professor"),
+    ("Dr. Priyanka Menon", "FAC003", "Assistant Professor"),
+    ("Dr. Suresh Narayanan", "FAC004", "Assistant Professor"),
+    ("Dr. Meenakshi Rao", "FAC005", "Associate Professor"),
+]
+
+
+# ============================================================
+# SUBJECTS
+# ============================================================
+
+SUBJECT_DATA = [
+    # Semester 1
+    ("HS23111", "Professional English", 1, 3),
+    ("MA23111", "Discrete Mathematics", 1, 4),
+    ("PH23111", "Engineering Physics", 1, 3),
+    ("CY23111", "Engineering Chemistry", 1, 3),
+    ("GE23111", "Engineering Graphics", 1, 3),
+    ("CS23111", "Programming in C", 1, 4),
+
+    # Semester 2
+    ("MA23211", "Probability and Statistics", 2, 4),
+    ("CS23211", "Data Structures", 2, 4),
+    ("CS23212", "Object Oriented Programming", 2, 3),
+    ("EC23211", "Digital Electronics", 2, 3),
+    ("CS23213", "Database Management Systems", 2, 4),
+    ("CS23214", "Web Programming", 2, 3),
+
+    # Semester 3
+    ("CS23311", "Operating Systems", 3, 4),
+    ("CS23312", "Computer Networks", 3, 4),
+    ("CS23313", "Design and Analysis of Algorithms", 3, 4),
+    ("CS23314", "Artificial Intelligence", 3, 3),
+    ("CB23311", "Business Analytics", 3, 3),
+
+    # Semester 4
+    ("CS23411", "Machine Learning", 4, 4),
+    ("CS23412", "Software Engineering", 4, 3),
+    ("CS23413", "Computer Architecture", 4, 3),
+    ("CS23414", "Data Mining", 4, 4),
+    ("CB23411", "Business Intelligence", 4, 3),
+
+    # Semester 5
+    ("CB23E32", "Fundamentals of IoT", 5, 4),
+    ("CB23621", "Internship", 5, 2),
+
+    # Semester 6
+    ("BA23613", "Business Ethics", 6, 3),
+    ("CS23611", "Cloud Computing", 6, 4),
+    ("CS23612", "Big Data Analytics", 6, 4),
+    ("CS23613", "Deep Learning", 6, 4),
+
+    # Semester 7 - current
+    ("CB23E36", "Cryptology", 7, 4),
+    ("CB23731", "Data Visualization Techniques", 7, 3),
+    ("CB23732", "IT Project Management", 7, 3),
+    ("NPTEL-MSID", "Managerial Skills for Interpersonal Development", 7, 3),
+    ("CB23721", "Project Evaluation I", 7, 2),
+]
+
+
+# ============================================================
+# HELPERS
+# ============================================================
+
+def password_hash(raw_password: str) -> str:
+    """
+    Deterministic password hash for synthetic seed accounts.
+    This is seed-only data.
+    """
+    return hashlib.sha256(raw_password.encode()).hexdigest()
+
+
+def create_user(username, email, role):
+    return User(
+        username=username,
+        email=email,
+        password_hash=password_hash("EduNexus@123"),
+        role=role,
+        is_active=True,
+    )
+
+
+def synthetic_student_name(index: int) -> str:
+    first = FIRST_NAMES[(index - 1) % len(FIRST_NAMES)]
+    last = LAST_NAMES[((index - 1) // len(FIRST_NAMES)) % len(LAST_NAMES)]
+    return f"{first} {last}"
+
+
+def clamp(value, low, high):
+    return max(low, min(high, value))
+
+
+def academic_year(semester):
+    mapping = {
+        1: "2023-24",
+        2: "2023-24",
+        3: "2024-25",
+        4: "2024-25",
+        5: "2025-26",
+        6: "2025-26",
+        7: "2026-27",
+    }
+    return mapping[semester]
+
+
+# ============================================================
+# CLEAN EXISTING SEED DATA
+# ============================================================
+
+def clear_database(db: Session):
+    print("Clearing existing database data...")
+
+    # Delete in dependency-safe order.
+    db.query(AuditLog).delete()
+    db.query(Notification).delete()
+    db.query(Achievement).delete()
+    db.query(Resource).delete()
+    db.query(AttendanceRecord).delete()
+    db.query(AttendanceSession).delete()
+    db.query(Mark).delete()
+    db.query(Assessment).delete()
+    db.query(Enrollment).delete()
+    db.query(SemesterResult).delete()
+    db.query(Event).delete()
+    db.query(Student).delete()
+    db.query(Faculty).delete()
+    db.query(Subject).delete()
+    db.query(Department).delete()
+    db.query(User).delete()
+
+    db.commit()
+
+
+# ============================================================
+# DEPARTMENT
+# ============================================================
+
+def seed_department(db):
+    department = Department(
+        code=DEPARTMENT_CODE,
+        name=DEPARTMENT_NAME,
+    )
+
+    db.add(department)
+    db.flush()
+
+    return department
+
+
+# ============================================================
+# FACULTY
+# ============================================================
+
+def seed_faculty(db, department):
+    faculty_members = []
+
+    for index, (name, employee_id, designation) in enumerate(FACULTY_NAMES, start=1):
+        username = employee_id.lower()
+
+        user = create_user(
+            username=username,
+            email=f"{username}@edunexus.edu",
+            role="FACULTY",
+        )
+
+        faculty = Faculty(
+            user=user,
+            employee_id=employee_id,
+            name=name,
+            department=department,
+            designation=designation,
+        )
+
+        db.add(faculty)
+        faculty_members.append(faculty)
+
+    db.flush()
+
+    return faculty_members
+
+
+# ============================================================
+# SUBJECTS
+# ============================================================
+
+def seed_subjects(db, department):
+    subjects = {}
+
+    for code, name, semester, credits in SUBJECT_DATA:
+        subject = Subject(
+            code=code,
+            name=name,
+            department=department,
+            semester=semester,
+            credits=credits,
+        )
+
+        db.add(subject)
+        subjects[code] = subject
+
+    db.flush()
+
+    return subjects
+
+
+# ============================================================
+# STUDENTS
+# ============================================================
+
+def seed_students(db, department):
+    students = []
+
+    register_numbers = list(
+        range(SECTION_A_START, SECTION_A_END + 1)
+    ) + list(
+        range(SECTION_B_START, SECTION_B_END + 1)
+    )
+
+    for index, register_number in enumerate(register_numbers, start=1):
+
+        if register_number <= SECTION_A_END:
+            section = "A"
+        else:
+            section = "B"
+
+        name = synthetic_student_name(index)
+
+        username = f"student{index:03d}"
+        email = f"{username}@edunexus.edu"
+
+        user = create_user(
+            username=username,
+            email=email,
+            role="STUDENT",
+        )
+
+        # Create meaningful longitudinal student profiles.
+        profile_type = index % 10
+
+        if profile_type in (0, 1):
+            # High performing
+            base_performance = 88
+            attendance_base = 92
+
+        elif profile_type in (2, 3):
+            # Good / average
+            base_performance = 76
+            attendance_base = 85
+
+        elif profile_type in (4, 5, 6, 7):
+            # Average
+            base_performance = 67
+            attendance_base = 78
+
+        elif profile_type == 8:
+            # At-risk
+            base_performance = 48
+            attendance_base = 62
+
+        else:
+            # Improving student
+            base_performance = 58
+            attendance_base = 70
+
+        student = Student(
+            user=user,
+            register_number=str(register_number),
+            name=name,
+            department=department,
+            batch=BATCH,
+            semester=7,
+            section=section,
+            cgpa=None,
+        )
+
+        # Store helper values temporarily.
+        student._profile_base = base_performance
+        student._attendance_base = attendance_base
+        student._profile_type = profile_type
+
+        db.add(student)
+        students.append(student)
+
+    db.flush()
+
+    return students
+
+
+# ============================================================
+# ENROLLMENTS
+# ============================================================
+
+def seed_enrollments(db, students, subjects):
+    print("Creating enrollments...")
+
+    for student in students:
+
+        for subject in subjects.values():
+
+            semester = subject.semester
+
+            # Current Sem 7 students are enrolled in Sem 1-7.
+            if semester <= 7:
+
+                enrollment = Enrollment(
+                    student=student,
+                    subject=subject,
+                    academic_year=academic_year(semester),
+                )
+
+                db.add(enrollment)
+
+    db.flush()
+
+
+# ============================================================
+# HISTORICAL RESULTS
+# ============================================================
+
+def seed_semester_results(db, students):
+    print("Creating Semester 1-6 results...")
+
+    for student in students:
+
+        base = student._profile_base
+
+        cumulative = []
+
+        for semester in range(1, 7):
+
+            # Natural semester variation.
+            variation = random.uniform(-5, 5)
+
+            if student._profile_type == 9:
+                # Improving student
+                trend = semester * 3
+            elif student._profile_type == 8:
+                # At-risk student
+                trend = -semester * 1.2
+            else:
+                trend = 0
+
+            sgpa = clamp(
+                base + variation + trend,
+                45,
+                96,
+            )
+
+            # Convert marks-like performance to a realistic SGPA range.
+            sgpa = round(5.0 + (sgpa - 45) / 10, 2)
+            sgpa = clamp(sgpa, 5.0, 9.8)
+
+            cumulative.append(sgpa)
+
+            cgpa = round(sum(cumulative) / len(cumulative), 2)
+
+            # Approximate semester credits from completed academic workload.
+            credits = {
+                1: 22,
+                2: 23,
+                3: 22,
+                4: 22,
+                5: 21,
+                6: 22,
+            }[semester]
+
+            result = SemesterResult(
+                student=student,
+                semester=semester,
+                sgpa=sgpa,
+                cgpa=cgpa,
+                total_credits=credits,
+                academic_year=academic_year(semester),
+            )
+
+            db.add(result)
+
+            if semester == 6:
+                student.cgpa = cgpa
+
+    db.flush()
+
+
+# ============================================================
+# HISTORICAL + CURRENT ASSESSMENTS
+# ============================================================
+
+def seed_assessments_and_marks(db, students, subjects):
+    print("Creating assessments and marks...")
+
+    assessment_objects = []
+
+    # Historical semesters 1-6
+    for subject in subjects.values():
+
+        if subject.semester > 6:
+            continue
+
+        assessment_specs = [
+            ("CAT-I", "CAT", 50),
+            ("CAT-II", "CAT", 50),
+            ("Model Examination", "MODEL", 100),
+        ]
+
+        for name, assessment_type, max_marks in assessment_specs:
+
+            assessment = Assessment(
+                subject=subject,
+                name=name,
+                assessment_type=assessment_type,
+                max_marks=max_marks,
+                assessment_date=date(
+                    2024 + ((subject.semester - 1) // 2),
+                    min(12, 2 + subject.semester),
+                    min(28, 10 + subject.semester),
+                ),
+            )
+
+            db.add(assessment)
+            assessment_objects.append(assessment)
+
+    # Current Semester 7 assessments
+    current_subjects = [
+        subject
+        for subject in subjects.values()
+        if subject.semester == 7
+        and subject.code != "NPTEL-MSID"
+    ]
+
+    for subject in current_subjects:
+
+        if subject.code == "CB23721":
+            specs = [
+                ("Project Evaluation I", "PROJECT", 100),
+            ]
+
+        else:
+            specs = [
+                ("CAT-I", "CAT", 50),
+                ("Internal Assessment", "INTERNAL", 50),
+            ]
+
+        for name, assessment_type, max_marks in specs:
+
+            assessment = Assessment(
+                subject=subject,
+                name=name,
+                assessment_type=assessment_type,
+                max_marks=max_marks,
+                assessment_date=date(2026, 9, 10),
+            )
+
+            db.add(assessment)
+            assessment_objects.append(assessment)
+
+    db.flush()
+
+    # Generate marks.
+    for assessment in assessment_objects:
+
+        subject = assessment.subject
+
+        for student in students:
+
+            # NPTEL does not receive fabricated marks.
+            if subject.code == "NPTEL-MSID":
+                continue
+
+            base = student._profile_base
+
+            # Current students have more variation.
+            variation = random.uniform(-12, 12)
+
+            if student._profile_type == 9:
+                trend = 8
+            elif student._profile_type == 8:
+                trend = -5
+            else:
+                trend = 0
+
+            percentage = clamp(
+                base + variation + trend,
+                25,
+                98,
+            )
+
+            marks = round(
+                assessment.max_marks * percentage / 100,
+                1,
+            )
+
+            db.add(
+                Mark(
+                    student=student,
+                    assessment=assessment,
+                    marks_obtained=marks,
+                )
+            )
+
+    db.flush()
+
+
+# ============================================================
+# ATTENDANCE
+# ============================================================
+
+def seed_attendance(db, students, subjects, faculty_members):
+    print("Creating attendance sessions and records...")
+
+    current_subjects = [
+        subject
+        for subject in subjects.values()
+        if subject.semester == 7
+        and subject.code != "NPTEL-MSID"
+    ]
+
+    start_date = date(2026, 8, 3)
+
+    for subject_index, subject in enumerate(current_subjects):
+
+        faculty = faculty_members[
+            subject_index % len(faculty_members)
+        ]
+
+        # 8 sessions per subject.
+        for session_index in range(8):
+
+            session_date = start_date + timedelta(
+                days=session_index * 7 + subject_index
+            )
+
+            # Keep all generated dates <= current date.
+            if session_date > date.today():
+                continue
+
+            period = (session_index % 5) + 1
+
+            for section in ["A", "B"]:
+
+                session = AttendanceSession(
+                    subject=subject,
+                    faculty=faculty,
+                    session_date=session_date,
+                    period=period,
+                    semester=7,
+                    section=section,
+                )
+
+                db.add(session)
+                db.flush()
+
+                section_students = [
+                    student
+                    for student in students
+                    if student.section == section
+                ]
+
+                for student in section_students:
+
+                    attendance_probability = (
+                        student._attendance_base / 100
+                    )
+
+                    status = (
+                        "PRESENT"
+                        if random.random() < attendance_probability
+                        else "ABSENT"
+                    )
+
+                    db.add(
+                        AttendanceRecord(
+                            session=session,
+                            student=student,
+                            status=status,
+                        )
+                    )
+
+    db.flush()
+
+
+# ============================================================
+# RESOURCES
+# ============================================================
+
+def seed_resources(db, subjects, faculty_members):
+    print("Creating academic resources...")
+
+    resource_specs = [
+        ("CB23E36", "Cryptology Fundamentals", "PDF"),
+        ("CB23731", "Data Visualization Notes", "PDF"),
+        ("CB23732", "IT Project Management Guide", "PDF"),
+        ("CB23721", "Project Evaluation Guidelines", "PDF"),
+        ("CS23611", "Cloud Computing Unit Notes", "PDF"),
+        ("CS23612", "Big Data Analytics Notes", "PDF"),
+        ("CS23613", "Deep Learning Study Material", "PDF"),
+    ]
+
+    for index, (subject_code, title, resource_type) in enumerate(resource_specs):
+
+        if subject_code not in subjects:
+            continue
+
+        subject = subjects[subject_code]
+        faculty = faculty_members[index % len(faculty_members)]
+
+        resource = Resource(
+            subject=subject,
+            faculty=faculty,
+            title=title,
+            description=f"Seed academic resource for {subject.name}.",
+            file_name=f"{subject_code.lower()}_notes.pdf",
+            file_path=f"resources/{subject_code.lower()}_notes.pdf",
+            resource_type=resource_type,
+        )
+
+        db.add(resource)
+
+    db.flush()
+
+
+# ============================================================
+# ACHIEVEMENTS
+# ============================================================
+
+def seed_achievements(db, students):
+    print("Creating student achievements...")
+
+    achievement_templates = [
+        (
+            "Hackathon Participation",
+            "HACKATHON",
+            "Participated in an inter-college technology hackathon.",
+        ),
+        (
+            "Python Workshop",
+            "WORKSHOP",
+            "Completed a technical workshop on Python and data science.",
+        ),
+        (
+            "Technical Symposium",
+            "COMPETITION",
+            "Participated in a technical symposium event.",
+        ),
+        (
+            "Student Club Leadership",
+            "LEADERSHIP",
+            "Contributed to student club activities and event coordination.",
+        ),
+        (
+            "Internship Experience",
+            "INTERNSHIP",
+            "Completed an industry internship.",
+        ),
+    ]
+
+    for index, student in enumerate(students):
+
+        # Give roughly one achievement to every third student.
+        if index % 3 != 0:
+            continue
+
+        title, category, description = achievement_templates[
+            (index // 3) % len(achievement_templates)
+        ]
+
+        status = "VERIFIED" if index % 2 == 0 else "PENDING"
+
+        db.add(
+            Achievement(
+                student=student,
+                title=title,
+                category=category,
+                description=description,
+                verification_status=status,
+            )
+        )
+
+    db.flush()
+
+
+# ============================================================
+# EVENTS
+# ============================================================
+
+def seed_events(db):
+    print("Creating university events...")
+
+    events = [
+        Event(
+            title="EduNexus Academic Orientation",
+            description="Academic orientation and student support session.",
+            event_date=datetime(2026, 9, 15, 10, 0),
+            location="Seminar Hall",
+        ),
+        Event(
+            title="AI and Data Science Workshop",
+            description="Hands-on workshop on AI engineering and data science.",
+            event_date=datetime(2026, 9, 20, 14, 0),
+            location="Innovation Lab",
+        ),
+        Event(
+            title="Project Review Session",
+            description="Semester project review and evaluation session.",
+            event_date=datetime(2026, 9, 22, 10, 0),
+            location="Project Lab",
+        ),
+    ]
+
+    db.add_all(events)
+    db.flush()
+
+
+# ============================================================
+# NOTIFICATIONS
+# ============================================================
+
+def seed_notifications(db, students):
+    print("Creating notifications...")
+
+    for student in students:
+
+        # Only create a small number of notifications.
+        if int(student.register_number[-2:]) % 5 != 0:
+            continue
+
+        db.add(
+            Notification(
+                user_id=student.user_id,
+                title="Attendance Reminder",
+                message=(
+                    "Review your current semester attendance "
+                    "and maintain the required attendance percentage."
+                ),
+                is_read=False,
+            )
+        )
+
+    db.flush()
+
+
+# ============================================================
+# AUDIT LOG
+# ============================================================
+
+def seed_audit_logs(db, faculty_members):
+    print("Creating audit records...")
+
+    for faculty in faculty_members:
+
+        db.add(
+            AuditLog(
+                user_id=faculty.user_id,
+                action="SEED_INITIALIZATION",
+                entity_type="SYSTEM",
+                entity_id=None,
+                details="Synthetic EduNexus development dataset initialized.",
+            )
+        )
+
+    db.flush()
+
+
+# ============================================================
+# MAIN
+# ============================================================
+
+def main():
+
+    print("=" * 60)
+    print("EDUNEXUS DATABASE SEED")
+    print("=" * 60)
+
+    try:
+
+        clear_database(DB)
+
+        department = seed_department(DB)
+
+        faculty_members = seed_faculty(
+            DB,
+            department,
+        )
+
+        subjects = seed_subjects(
+            DB,
+            department,
+        )
+
+        students = seed_students(
+            DB,
+            department,
+        )
+
+        seed_enrollments(
+            DB,
+            students,
+            subjects,
+        )
+
+        seed_semester_results(
+            DB,
+            students,
+        )
+
+        seed_assessments_and_marks(
+            DB,
+            students,
+            subjects,
+        )
+
+        seed_attendance(
+            DB,
+            students,
+            subjects,
+            faculty_members,
+        )
+
+        seed_resources(
+            DB,
+            subjects,
+            faculty_members,
+        )
+
+        seed_achievements(
+            DB,
+            students,
+        )
+
+        seed_events(DB)
+
+        seed_notifications(
+            DB,
+            students,
+        )
+
+        seed_audit_logs(
+            DB,
+            faculty_members,
+        )
+
+        DB.commit()
+
+        print()
+        print("=" * 60)
+        print("SEED COMPLETED SUCCESSFULLY")
+        print("=" * 60)
+        print(f"Students       : {DB.query(Student).count()}")
+        print(f"Faculty        : {DB.query(Faculty).count()}")
+        print(f"Subjects       : {DB.query(Subject).count()}")
+        print(f"Enrollments    : {DB.query(Enrollment).count()}")
+        print(f"Assessments    : {DB.query(Assessment).count()}")
+        print(f"Marks          : {DB.query(Mark).count()}")
+        print(f"Attendance     : {DB.query(AttendanceRecord).count()}")
+        print(f"Results        : {DB.query(SemesterResult).count()}")
+        print(f"Resources      : {DB.query(Resource).count()}")
+        print(f"Achievements   : {DB.query(Achievement).count()}")
+        print(f"Events         : {DB.query(Event).count()}")
+        print("=" * 60)
+
+    except Exception as exc:
+
+        DB.rollback()
+
+        print()
+        print("=" * 60)
+        print("SEED FAILED")
+        print("=" * 60)
+        print(type(exc).__name__)
+        print(str(exc))
+        print("=" * 60)
+
+        raise
+
+    finally:
+        DB.close()
+
+
+if __name__ == "__main__":
+    main()

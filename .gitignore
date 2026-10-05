@@ -1,0 +1,19 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+.env.*
+
+# ChromaDB local data
+chroma_db/
+*.sqlite3
+
+# Node
+node_modules/
+dist/
+
+# IDE
+.vscode/

@@ -1,0 +1,109 @@
+{
+  "evaluation_set": "Hand-authored intent cases",
+  "case_count": 7,
+  "correct": 7,
+  "accuracy": 1.0,
+  "mean_routing_latency_ms": 0.00957142869343183,
+  "cases": [
+    {
+      "role": "student",
+      "question": "What is my attendance?",
+      "expected": "student_success",
+      "actual": "student_success",
+      "correct": true,
+      "latency_ms": 0.01920000067912042
+    },
+    {
+      "role": "student",
+      "question": "How am I performing?",
+      "expected": "student_success",
+      "actual": "student_success",
+      "correct": true,
+      "latency_ms": 0.008299997716676444
+    },
+    {
+      "role": "student",
+      "question": "What subjects are in Semester VII?",
+      "expected": "academic",
+      "actual": "academic",
+      "correct": true,
+      "latency_ms": 0.0104000027931761
+    },
+    {
+      "role": "student",
+      "question": "What is the mentor-mentee policy?",
+      "expected": "university",
+      "actual": "university",
+      "correct": true,
+      "latency_ms": 0.008200000593205914
+    },
+    {
+      "role": "faculty",
+      "question": "Which students have low attendance?",
+      "expected": "faculty_intelligence",
+      "actual": "faculty_intelligence",
+      "correct": true,
+      "latency_ms": 0.0032999996619764715
+    },
+    {
+      "role": "faculty",
+      "question": "Explain the college anti-ragging policy",
+      "expected": "university",
+      "actual": "university",
+      "correct": true,
+      "latency_ms": 0.008600000001024455
+    },
+    {
+      "role": "faculty",
+      "question": "What subjects are in Semester VII?",
+      "expected": "academic",
+      "actual": "academic",
+      "correct": true,
+      "latency_ms": 0.008999999408842996
+    }
+  ],
+  "metrics_by_route": {
+    "academic": {
+      "true_positive": 2,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "case_count": 2,
+      "task_success": 1.0
+    },
+    "faculty_intelligence": {
+      "true_positive": 1,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "case_count": 1,
+      "task_success": 1.0
+    },
+    "student_success": {
+      "true_positive": 2,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "case_count": 2,
+      "task_success": 1.0
+    },
+    "university": {
+      "true_positive": 2,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "case_count": 2,
+      "task_success": 1.0
+    }
+  },
+  "false_positive_count": 0,
+  "false_negative_count": 0
+}

@@ -1,0 +1,4 @@
+const base='/api';
+export async function api(path,opts={}){const token=localStorage.getItem('edunexus_token');const headers={...(opts.body instanceof FormData?{}:{'Content-Type':'application/json'}),...(opts.headers||{})};if(token)headers.Authorization=`Bearer ${token}`;const r=await fetch(base+path,{...opts,headers});let d=null;try{d=await r.json()}catch{}if(!r.ok)throw new Error(d?.detail||d?.message||`Request failed (${r.status})`);return d}
+export async function login(username,password){const body=new URLSearchParams({username,password});const r=await fetch(base+'/auth/login',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});let d=null;try{d=await r.json()}catch{}if(!r.ok)throw new Error(d?.detail||'Invalid username or password');return d}
+export function logout(){localStorage.removeItem('edunexus_token');localStorage.removeItem('edunexus_user')}
