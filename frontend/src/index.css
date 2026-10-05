@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-primary: #f8fafc;
+    --bg-card: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --purple-primary: #4c1d95;
+    --purple-hover: #371b78;
+    --accent-purple: #7c3aed;
+  }
+
+  .dark {
+    --bg-primary: #0f172a;
+    --bg-card: #1e1b4b;
+    --text-main: #f8fafc;
+    --text-muted: #94a3b8;
+    --border-color: #312e81;
+    --purple-primary: #6d28d9;
+    --purple-hover: #7c3aed;
+    --accent-purple: #a78bfa;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.dark .glass-panel {
+  background: rgba(30, 27, 75, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(49, 46, 129, 0.8);
+}
